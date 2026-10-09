@@ -6,8 +6,6 @@ OraCol finds which species in a metagenomic species table are oral bacteria, usi
 curated oral taxa reference databases, and returns per-species and per-sample summaries: relative abundance,
 prevalence, centred log-ratio (CLR) values, richness and Shannon diversity.
 
-> **Status:** early development (version 0.0.1). Function arguments and outputs may still change.
-
 ## Installation
 
 R version 4.5.0 or newer. 
@@ -43,6 +41,7 @@ OraCol_res$Summary_table_species   # one row per oral species
   all give the same results. (Also accept NCBI ID as input)
 - Species names as row names, written `Genus_species` (e.g. `Streptococcus_mitis`), and sample
   names as column names. If species are columns instead, use `taxa_are_rows = FALSE`.
+- Otherwise, provide NCBI ID for row also works wonderfully. 
 - No missing (`NA`) or negative values.
 
 Species names are matched to NCBI taxonomy IDs with TaxSEA. Names missing from TaxSEA's built-in
