@@ -1,4 +1,4 @@
-# OraCol
+<img width="272" height="70" alt="image" src="https://github.com/user-attachments/assets/eb660354-b472-4e22-b240-fa281c3f6635" /># OraCol
 
 Summarise, detect and categorise Oral Colonisation of bacteria in the gut. 
 
@@ -49,12 +49,12 @@ list are looked up online at NCBI, which is slower and needs an internet connect
 
 ## Oral definitions
 
-| `oral_definition` | Oral taxa list |
-|---|---|
-| `"HOMD"` (default) | Human Oral Microbiome Database |
-| `"eHOMD"` | expanded HOMD (adds nasal and upper-airway taxa) |
-| `"OES"` | Oral Enrichment Score at 1% (Manghi, 2025)|
-| `"mBodyMap"` | mBodyMap_Oral Healthy only|
+| `oral_definition` | Oral taxa list | Reference |
+|---|---|---|
+| `"HOMD"` (default) | Human Oral Microbiome Database | Chen et al. 2010 |
+| `"eHOMD"` | expanded HOMD (adds nasal and upper-airway taxa) | Escapa et al. 2018 |
+| `"OES"` | Oral Enrichment Score at 1% | (Manghi, 2025) |
+| `"mBodyMap"` | mBodyMap_Oral Healthy only| Jin et al. 2022 |
 
 ## Output
 
