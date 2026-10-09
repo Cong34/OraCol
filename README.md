@@ -1,4 +1,4 @@
-<img width="272" height="70" alt="image" src="https://github.com/user-attachments/assets/eb660354-b472-4e22-b240-fa281c3f6635" /># OraCol
+OraCol
 
 Summarise, detect and categorise Oral Colonisation of bacteria in the gut. 
 
