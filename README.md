@@ -53,8 +53,8 @@ list are looked up online at NCBI, which is slower and needs an internet connect
 |---|---|
 | `"HOMD"` (default) | Human Oral Microbiome Database |
 | `"eHOMD"` | expanded HOMD (adds nasal and upper-airway taxa) |
-| `"OES"` | TODO: describe source |
-| `"mBodyMap"` | TODO: describe source |
+| `"OES"` | Oral Enrichment Score at 1% (Manghi, 2025)|
+| `"mBodyMap"` | mBodyMap_Oral Healthy only|
 
 ## Output
 
@@ -68,12 +68,6 @@ list are looked up online at NCBI, which is slower and needs an internet connect
 | `Summary_table_samples` | One row per sample: oral relative abundance, oral CLR sum and mean, oral and whole-community richness and Shannon diversity |
 | `matching` | Every input species, its NCBI ID (`NA` if not found) and whether it counted as oral |
 
-Notes:
-
-- Each sample is rescaled so the species in your table add up to 1. If unclassified reads were
-  removed beforehand, `Oral_RA_sum` is the oral share of the classified part of the sample.
-- CLR is computed over the whole community, then subset to oral species. Zeros are handled by
-  adding a pseudocount of half the smallest non-zero relative abundance in the table.
 
 ## License
 
