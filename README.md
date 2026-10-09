@@ -53,7 +53,7 @@ list are looked up online at NCBI, which is slower and needs an internet connect
 |---|---|---|
 | `"HOMD"` (default) | Human Oral Microbiome Database | Chen et al. 2010 |
 | `"eHOMD"` | expanded HOMD (adds nasal and upper-airway taxa) | Escapa et al. 2018 |
-| `"OES"` | Oral Enrichment Score at 1% | (Manghi, 2025) |
+| `"OES"` | Oral Enrichment Score at 1% | Manghi, 2025 |
 | `"mBodyMap"` | mBodyMap_Oral Healthy only| Jin et al. 2022 |
 
 ## Output
