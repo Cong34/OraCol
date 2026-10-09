@@ -1,0 +1,20 @@
+Package: OraCol
+Type: Package
+Title: Summarise Oral Bacteria in Metagenomic Species Tables
+Version: 0.0.1
+Authors@R:
+    person("Cong", "Pham", email = "pham0323@flinders.edu.au",
+           role = c("aut", "cre"))
+URL: https://github.com/Cong34/OraCol
+Description: Identifies oral bacterial species in a metagenomic species
+    abundance table using curated oral taxa lists (HOMD, OES, mBodyMap) and
+    returns per-species and per-sample summaries of oral bacteria, including
+    relative abundance, prevalence, centred log-ratio (CLR) values, richness
+    and Shannon diversity.
+License: MIT + file LICENSE
+Encoding: UTF-8
+Depends: R (>= 4.5.0)
+Imports:
+    stats,
+    TaxSEA
+biocViews:

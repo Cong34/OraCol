@@ -1,0 +1,9 @@
+# Files Git must never upload to GitHub.
+
+# RStudio's settings and session cache (includes copies of your open scripts)
+.Rproj.user/
+
+# R command history and saved workspaces (personal; may contain file paths or data)
+.Rhistory
+.RData
+.Ruserdata

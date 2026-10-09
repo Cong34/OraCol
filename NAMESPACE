@@ -1,0 +1,2 @@
+export(OraCol)
+importFrom(stats, median, sd)
