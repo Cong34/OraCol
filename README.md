@@ -64,10 +64,6 @@ head(HMP_res$Summary_table_species)   # per species: sort by prevalence
 
 - A matrix or data.frame of **species-level** abundances. Counts, proportions and percentages
   all give the same results. (Also accept NCBI ID as input)
-- Species names as row names, written `Genus_species` (e.g. `Streptococcus_mitis`), and sample
-  names as column names. If species are columns instead, use `taxa_are_rows = FALSE`.
-- Otherwise, provide NCBI ID for row also works wonderfully. 
-- No missing (`NA`) or negative values.
 - Relative abundances below `detection_threshold` (default 0.001%) count as not detected and are
   set to 0, so a raw table and an already-filtered table give the same results. Use
   `detection_threshold = 0` to keep every value.
@@ -87,10 +83,10 @@ list are looked up online at NCBI, which is slower and needs an internet connect
 ## More Details: 
 | `Oral_db` | DB size | Samples size | Sequencing method | Species definition | Status |
 |---|---|---|---|---|---|
-| `"HOMD"` | 340 taxa | 33k 16S RNA clone | Full length 16S | 98.5% 16S identity | Healthy and diseases |
-| `"eHOMD"` | 404 taxa | 44k 16S RNA clone | Full length 16S | 98.5% 16S identity | Healthy and diseases |
-| `"OES"` | 305 taxa | 857 metagenomic sample | Shotgun | 1% threshold prevalence | Healthy and diseases |
-| `"mBodyMap"` | 351 taxa | 8077 samples | 16S + Shotgun | NCBI taxonomy (>=2 samples + 0.01% RA) | Healthy |
+| HOMD | 340 taxa | 33k 16S RNA clone | Full length 16S | 98.5% 16S identity | Healthy and diseases |
+| eHOMD | 404 taxa | 44k 16S RNA clone | Full length 16S | 98.5% 16S identity | Healthy and diseases |
+| OES | 305 taxa | 857 metagenomic sample | Shotgun | 1% threshold prevalence | Healthy and diseases |
+| mBodyMap | 351 taxa | 8077 samples | 16S + Shotgun | NCBI taxonomy (>=2 samples + 0.01% RA) | Healthy |
 
 The databases ship with the package, so you can look at exactly which taxa each one contains:
 
