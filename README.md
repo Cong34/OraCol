@@ -1,4 +1,4 @@
-## OraCol
+# OraCol
 
 Summarise, detect and categorise Oral Colonisation of bacteria in the gut. 
 
@@ -39,7 +39,6 @@ OraCol_res$Summary_table_species   # one row per oral species
 
 This example runs OraCol on the HMP_2012 dataset from
 [curatedMetagenomicData](https://bioconductor.org/packages/curatedMetagenomicData)
-(install it with `BiocManager::install("curatedMetagenomicData")`).
 
 ```r
 library(OraCol)
@@ -85,7 +84,7 @@ list are looked up online at NCBI, which is slower and needs an internet connect
 | `"OES"` | Oral Enrichment Score at 1% | Manghi, 2025 |
 | `"mBodyMap"` | mBodyMap_Oral Healthy | Jin et al. 2022 |
 
-# More Details: 
+## More Details: 
 | `Oral_db` | DB size | Samples size | Sequencing method | Species definition | Status |
 |---|---|---|---|---|---|
 | `"HOMD"` | 340 taxa | 33k 16S RNA clone | Full length 16S | 98.5% 16S identity | Healthy and diseases |
