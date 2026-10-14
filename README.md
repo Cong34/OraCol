@@ -81,7 +81,7 @@ list are looked up online at NCBI, which is slower and needs an internet connect
 | `"mBodyMap"` | mBodyMap_Oral Healthy | Jin et al. 2022 |
 
 ## More Details: 
-| `Oral_db` | DB size | Samples size | Sequencing method | Species definition | Status |
+| Oral_db | DB size | Samples size | Sequencing method | Species definition | Status |
 |---|---|---|---|---|---|
 | HOMD | 340 taxa | 33k 16S RNA clone | Full length 16S | 98.5% 16S identity | Healthy and diseases |
 | eHOMD | 404 taxa | 44k 16S RNA clone | Full length 16S | 98.5% 16S identity | Healthy and diseases |
@@ -102,10 +102,10 @@ names(Oral_db)       # "OES" "mBodyMap" "HOMD" "eHOMD"
 
 | Element | Contents |
 |---|---|
-| `species_table_oral` | Relative abundance (0-1) of the oral species in each sample |
-| `species_table_oral_CLR` | CLR values of the oral species |
-| `Summary_table_species` | One row per oral species: mean, median, SD and sum of relative abundance, prevalence, number of samples detected, mean and median CLR (sorted by prevalence) |
-| `Summary_table_samples` | One row per sample: oral relative abundance, oral CLR sum and mean, oral and whole-community richness and Shannon diversity |
+| `species_table_oral` | Relative abundance of the oral species in each sample |
+| `species_table_oral_CLR` | Center Log ratio values of the oral species |
+| `Summary_table_species` | Summary of species: relative abundance, prevalence, number of samples detected, and CLR |
+| `Summary_table_samples` | Summary of sample: oral relative abundance, oral CLR sum, richness and Shannon diversity |
 | `matching` | Every input species, its NCBI ID (`NA` if not found) and whether it counted as oral |
 
 
