@@ -27,6 +27,24 @@ data(Oral_db)
 The four oral definitions that \code{\link[=OraCol]{OraCol()}} can use. Each one lists the taxa that the
 database considers oral.
 }
+\details{
+The four databases:\tabular{lll}{
+   Database \tab Oral taxa list \tab Reference \cr
+   \code{HOMD} \tab Human Oral Microbiome Database \tab Chen et al. 2010 \cr
+   \code{eHOMD} \tab expanded HOMD (Add Nasal) \tab Escapa et al. 2018 \cr
+   \code{OES} \tab Oral Enrichment Score at 1\% \tab Manghi, 2025 \cr
+   \code{mBodyMap} \tab mBodyMap_Oral Healthy \tab Jin et al. 2022 \cr
+}
+
+
+More details on how each one was built:\tabular{llllll}{
+   Database \tab DB size \tab Samples size \tab Sequencing method \tab Species definition \tab Status \cr
+   \code{HOMD} \tab 340 taxa \tab 33k 16S RNA clone \tab Full length 16S \tab 98.5\% 16S identity \tab Healthy and diseases \cr
+   \code{eHOMD} \tab 404 taxa \tab 44k 16S RNA clone \tab Full length 16S \tab 98.5\% 16S identity \tab Healthy and diseases \cr
+   \code{OES} \tab 305 taxa \tab 857 metagenomic sample \tab Shotgun \tab 1\% threshold prevalence \tab Healthy and diseases \cr
+   \code{mBodyMap} \tab 351 taxa \tab 8077 samples \tab 16S + Shotgun \tab NCBI taxonomy (>=2 samples + 0.01\% RA) \tab Healthy \cr
+}
+}
 \examples{
 data("Oral_db", package = "OraCol")
 names(Oral_db)
