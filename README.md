@@ -35,31 +35,6 @@ OraCol_res$Summary_table_species   # one row per oral species
 # It also currently output supplementary data, check OraCol_res other output. 
 ```
 
-## Example: oral samples from the Human Microbiome Project
-
-This example runs OraCol on the HMP_2012 dataset from
-[curatedMetagenomicData](https://bioconductor.org/packages/curatedMetagenomicData)
-
-```r
-library(OraCol)
-library(curatedMetagenomicData)
-
-# Species relative abundance of HMP_2012 (downloaded the first time, then stored on your computer)
-cmd <- curatedMetagenomicData(pattern = "2021-03-31.HMP_2012.relative_abundance",
-                                                 counts = TRUE, dryrun = FALSE)
-# Count table: 
-count_table <- assay(cmd$`2021-03-31.HMP_2012.relative_abundance`)
-species_table <- species_table[rowSums(species_table) > 0, ]  
-
-# Optional: shorten the labels (OraCol already do this)
-# rownames(species_table) <- sub(".*s__", "", rownames(species_table))
-
-HMP_res <- OraCol(species_table, oral_definition = "HOMD")
-
-head(HMP_res$Summary_table_samples)   # per sample: oral share, richness and diversity
-head(HMP_res$Summary_table_species)   # per species: sort by prevalence
-```
-
 ## Input
 
 - A matrix or data.frame of **species-level** abundances. Counts, proportions and percentages
@@ -107,6 +82,37 @@ names(Oral_db)       # "OES" "mBodyMap" "HOMD" "eHOMD"
 | `Summary_table_species` | Summary of species: relative abundance, prevalence, number of samples detected, and CLR |
 | `Summary_table_samples` | Summary of sample: oral relative abundance, oral CLR sum, richness and Shannon diversity |
 | `matching` | Every input species, its NCBI ID (`NA` if not found) and whether it counted as oral |
+
+
+
+## Example: oral samples from the Human Microbiome Project
+
+This example runs OraCol on the HMP_2012 dataset from
+[curatedMetagenomicData](https://bioconductor.org/packages/curatedMetagenomicData)
+
+```r
+library(OraCol)
+library(curatedMetagenomicData)
+
+# Species relative abundance of HMP_2012 (downloaded the first time, then stored on your computer)
+cmd <- curatedMetagenomicData(pattern = "2021-03-31.HMP_2012.relative_abundance",
+                                                 counts = TRUE, dryrun = FALSE)
+# Count table: 
+count_table <- assay(cmd$`2021-03-31.HMP_2012.relative_abundance`)
+species_table <- species_table[rowSums(species_table) > 0, ]  
+
+# Optional: shorten the labels (OraCol already do this)
+# rownames(species_table) <- sub(".*s__", "", rownames(species_table))
+
+HMP_res <- OraCol(species_table, oral_definition = "HOMD")
+
+head(HMP_res$Summary_table_samples)   # per sample: oral share, richness and diversity
+head(HMP_res$Summary_table_species)   # per species: sort by prevalence
+```
+
+
+
+
 
 
 ## License
