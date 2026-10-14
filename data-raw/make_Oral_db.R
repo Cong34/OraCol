@@ -1,19 +1,19 @@
 ##############################################################################################
 # make_Oral_db.R
 #
-# Builds R/sysdata.rda: the oral taxa lists that ship INSIDE the package.
-# Run this script whenever Oral_db_v2.rds is updated, with the package folder as your
+# Builds data/Oral_db.rda: the oral databases that ship with the package. OraCol() loads this
+# file with data(), and users can look at it with  data("Oral_db", package = "OraCol").
+# Run this script whenever Oral_db_v4.rds is updated, with the package folder as your
 # working directory (this happens automatically when you open the project's .Rproj file):
 #
 #   source("data-raw/make_Oral_db.R")
 #
-# R only auto-loads a file with the exact name R/sysdata.rda. Objects saved in it (here
-# Oral_db_v2) are available to the package's own functions by name, but hidden from users.
+# Then reinstall the package (Ctrl+Shift+B) so it uses the new file.
 ##############################################################################################
 
-Oral_db <- readRDS("Oral_db_v3.rds")
+Oral_db <- readRDS("Oral_db_v4.rds")
 
 # Convert each list from a tibble to a plain data.frame so the package never needs tibble.
 Oral_db <- lapply(Oral_db, as.data.frame, stringsAsFactors = FALSE)
 
-save(Oral_db, file = "R/sysdata.rda", compress = "xz")
+save(Oral_db, file = "data/Oral_db.rda", compress = "xz")

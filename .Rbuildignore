@@ -1,5 +1,5 @@
 ^.*\.Rproj$
 ^\.Rproj\.user$
 ^data-raw$
-^Oral_metric\.R$
-^Oral_db_v2\.rds$
+^LICENSE\.md$
+^Oral_db_v.*\.rds$

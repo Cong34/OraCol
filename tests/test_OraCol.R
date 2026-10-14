@@ -48,16 +48,18 @@ warning_message <- function(expr) tryCatch({ expr; "no warning" }, warning = con
 cat("Testing OraCol", format(packageVersion("OraCol")), "from", find.package("OraCol"), "\n")
 
 
-###################### 1. Internal oral database (R/sysdata.rda) ############################
-# OraCol() reads Oral_db from inside the package. These checks catch a database that was not
-# rebuilt after a change, e.g. a new oral definition added to OraCol() but not to sysdata.rda.
-# If you rename the database object, change "Oral_db" here too.
-cat("\n== 1. Internal oral database ==\n")
+###################### 1. Oral database (data/Oral_db.rda) ###################################
+# OraCol() loads Oral_db from the package's data/ folder. These checks catch a database that
+# was not rebuilt after a change, e.g. a new oral definition added to OraCol() but not to
+# data/Oral_db.rda. If you rename the database object, change "Oral_db" here too.
+cat("\n== 1. Oral database ==\n")
 
-ns <- asNamespace("OraCol")   # the package's private storage, where sysdata.rda is loaded
-# inherits = FALSE: look ONLY inside the package, ignoring any Oral_db in your own workspace.
+# Load the dataset into its own empty space, exactly as OraCol() does, so that an Oral_db
+# object in your own workspace cannot be mistaken for the package's one.
+ns <- new.env()
+suppressWarnings(utils::data("Oral_db", package = "OraCol", envir = ns))
 db_found <- exists("Oral_db", envir = ns, inherits = FALSE)
-check("R/sysdata.rda contains an object called Oral_db", db_found)
+check("data/Oral_db.rda provides an object called Oral_db", db_found)
 
 db      <- if (db_found) get("Oral_db", envir = ns) else list()
 choices <- eval(formals(OraCol::OraCol)$oral_definition)   # the choices OraCol() offers
@@ -224,6 +226,43 @@ check("Prevalence is between 0 and 1 and sorted high to low",
 for (definition in choices)
   check(paste0("runs with oral_definition = \"", definition, "\" and finds oral species"),
         any(run(ex, oral_definition = definition)$matching$is_oral))
+
+
+###################### 6. Detection threshold ################################################
+cat("\n== 6. Detection threshold ==\n")
+# One value is below the default threshold of 0.001%: S. mitis in S2 is 5 of 1,000,000 = 0.0005%.
+low <- matrix(c(100000, 300000, 600000,      0,     # S1, total 1,000,000
+                     5, 499995, 250000, 250000),    # S2, total 1,000,000
+              nrow = 4, dimnames = list(rownames(toy), c("S1", "S2")))
+res_keep <- run(low, detection_threshold = 0)   # 0 keeps every value
+res_low  <- run(low)                            # default: 0.001%
+smp_keep <- res_keep$Summary_table_samples
+smp_low  <- res_low$Summary_table_samples
+spp_low  <- res_low$Summary_table_species
+
+#   Threshold 0: S2 keeps all 4 species; oral share = (5 + 499995) / 1,000,000 = 0.5
+check("threshold 0 keeps the low value (S2: oral richness 2, total richness 4, oral share 0.5)",
+      same(smp_keep$Oral_richness, c(2, 2)) && same(smp_keep$Total_richness, c(3, 4)) &&
+        same(smp_keep$Oral_RA_sum, c(0.4, 0.5)))
+#   Default: the 5 becomes 0 and S2 is rescaled to the 999,995 that remain
+check("default threshold drops it (S2: oral richness 1, total richness 3, oral share 499995/999995)",
+      same(smp_low$Oral_richness, c(2, 1)) && same(smp_low$Total_richness, c(3, 3)) &&
+        same(smp_low$Oral_RA_sum, c(0.4, 499995 / 999995)))
+check("...so S. mitis counts as detected in 1 of 2 samples",
+      same(spp_low$Prevalence[spp_low$Species == "Streptococcus_mitis"], 0.5))
+
+# A table that was already filtered by hand must give exactly the same results as the raw one.
+filtered <- low
+filtered["Streptococcus_mitis", "S2"] <- 0
+check("a raw table and an already-filtered table give the same results", same(run(filtered), res_low))
+check("filtering by hand (threshold 0) = letting OraCol apply the threshold",
+      same(run(filtered, detection_threshold = 0), res_low))
+check("a table with nothing below the threshold is not changed by it",
+      same(run(toy, detection_threshold = 0), res))
+check("negative threshold -> 'detection_threshold' error",
+      grepl("detection_threshold", error_message(run(toy, detection_threshold = -1))))
+check("threshold that removes everything -> 'nothing left' error",
+      grepl("nothing left", error_message(run(toy, detection_threshold = 99))))
 
 
 ###################### Summary ###############################################################

@@ -22,9 +22,9 @@ NCBI_ids <- NCBI_ids[lengths(NCBI_ids) > 0]   # some names are stored with no ID
 species_pool <- grep("^[A-Z][a-z]+_[a-z]+$", names(NCBI_ids), value = TRUE)
 species_pool <- setdiff(species_pool, "Firmicutes_bacterium")
 
-# Split the pool into oral (in any of the three oral lists) and non-oral species.
-load("R/sysdata.rda")   # loads Oral_db_v2
-oral_names <- unique(unlist(lapply(Oral_db_v2, function(d) d$Taxa)))
+# Split the pool into oral (in any of the oral lists) and non-oral species.
+load("data/Oral_db.rda")   # loads Oral_db
+oral_names <- unique(unlist(lapply(Oral_db, function(d) d$Taxa)))
 oral_pool     <- intersect(species_pool, oral_names)
 non_oral_pool <- setdiff(species_pool, oral_names)
 

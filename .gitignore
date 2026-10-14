@@ -7,3 +7,6 @@
 .Rhistory
 .RData
 .Ruserdata
+
+# RStudio project file (personal; not needed to install or use the package)
+*.Rproj

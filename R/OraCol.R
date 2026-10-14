@@ -14,34 +14,81 @@
 #                              abundance, prevalence, mean and median CLR.
 #     $Summary_table_samples   One row per sample: oral relative abundance sum, oral CLR sum and
 #                              mean, oral richness + Shannon, whole-community richness + Shannon.
-
 # Dependencies: TaxSEA (NCBI taxon ID lookup).
-#
-# Note on CLR: CLR is taken over all taxa in the input table and only then subset to oral
-# taxa. If you CLR-transform the oral-only subset, each value becomes a log-ratio against the
-# geometric mean of the *oral* taxa, which says nothing about how much oral bacteria sits in
-# the gut. Taking it over the whole community means an oral taxon's CLR describes its
-# abundance relative to the typical taxon in that gut sample.
 ##############################################################################################
-
-
 ###################### Main function #########################################################
-#' @param species_table   data.frame or matrix of species-level or NCBI_ID abundances (counts,
-#'                        proportions or percentages).
-#' @param oral_definition Which oral database to use: "HOMD" (default), "eHOMD", "OES" or "mBodyMap".
-#' @param taxa_are_rows   TRUE if species are rows and samples are columns (MetaPhlAn style).
+#' Summarise oral bacteria in a metagenomic species table
 #'
+#' Finds which species in a species table are oral bacteria, using one of four oral
+#' reference databases, and returns per-species and per-sample summaries: relative
+#' abundance, prevalence, centred log-ratio (CLR) values, richness and Shannon diversity.
+#'
+#' @param species_table A matrix or data.frame of species-level abundances (counts,
+#'   proportions or percentages). Row names are species names or NCBI taxonomy IDs;
+#'   column names are sample names.
+#' @param oral_definition The oral database to use: `"HOMD"` (default), `"eHOMD"`,
+#'   `"OES"` or `"mBodyMap"`. See the section **Oral definitions**.
+#' @param taxa_are_rows `TRUE` (default) if species are rows and samples are columns.
+#'   Use `FALSE` if it is the other way round.
+#' @param detection_threshold Lowest relative abundance at which a species is considered
+#'   detected in the sample. The default `0.001` means 0.001%.
+#'
+#' @details
+#' OraCol first take a Species table and convert it to relative abundance to apply its threshold.
+#' After removing all the species that are not detected, it will re-scale the table to add up to 1.
+#'
+#' The Detection are divided into 3 steps asking basic questions:
+#'
+#' 1. Is the species detected in NCBI ID format
+#' 2. Does its name matched with the Oral databases (old or new)
+#' 3. Does it match with TaxSEA internal databases or does it need an Online look up
+#'
+#' With these steps, the aim is to convert the bacteria species name into ncbi id for easier comparison.
+#' A species counts as oral when its ID is in the chosen oral database.
+#'
+#' CLR values are calculated over the whole community and then subset to the oral
+#' species. Zeros are handled by adding half the smallest non-zero relative abundance.
+#'
+#' @section Oral definitions:
+#' * `"HOMD"`: Human Oral Microbiome Database (Chen et al. 2010).
+#' * `"eHOMD"`: expanded HOMD, which adds nasal and upper-airway taxa (Escapa et al. 2018).
+#' * `"OES"`: Oral Enrichment Score at 1% (Manghi 2025).
+#' * `"mBodyMap"`: mBodyMap, oral sites of healthy people only (Jin et al. 2022).
+#'
+#' @return A list with five elements:
+#' * `species_table_oral`: relative abundance (0 to 1) of the oral species in each sample.
+#' * `species_table_oral_CLR`: CLR values of the oral species.
+#' * `Summary_table_species`: one row per oral species, sorted by prevalence.
+#' * `Summary_table_samples`: one row per sample, with the oral relative abundance,
+#'   richness and Shannon diversity.
+#' * `matching`: every input species, its NCBI ID (`NA` if none was found) and whether it
+#'   counted as oral.
+#'
+#' @examples
+#' # Example table shipped with the package: 420 species x 40 samples
+#' f <- system.file("extdata", "sampling_data.csv", package = "OraCol")
+#' species_table <- read.csv(f, row.names = 1, check.names = FALSE)
+#'
+#' res <- OraCol(species_table, oral_definition = "HOMD")
+#' head(res$Summary_table_samples)
+#' head(res$Summary_table_species)
+#'
+#' @importFrom stats median sd
+#' @export
 OraCol <- function(species_table = NULL,
                    oral_definition = c("HOMD", "eHOMD", "OES", "mBodyMap"),
-                   taxa_are_rows = TRUE) {
+                   taxa_are_rows = TRUE,
+                   detection_threshold = 0.001) {
   # First Define the Oral definition:
   oral_definition <- match.arg(oral_definition)
+  # Load the oral databases that ship in the package's data/ folder.
+  utils::data("Oral_db", package = "OraCol", envir = environment())
   Oral_taxa <- Oral_db[[oral_definition]]
 
   # Some lists contain the same NCBI ID more than once, so count unique IDs only.
   oral_taxa_id <- unique(trimws(as.character(Oral_taxa$ncbi_id)))
   oral_taxa_id <- oral_taxa_id[!is.na(oral_taxa_id) & oral_taxa_id != ""]
-  message("Using oral definition: ", oral_definition, " (", length(oral_taxa_id), " unique taxa)")
+  message("Using oral definition: ", oral_definition)
 
   # Check basic conditions:
   if (is.null(species_table)) stop("`species_table` is required.")
@@ -57,12 +104,14 @@ OraCol <- function(species_table = NULL,
   if (!taxa_are_rows) species_table <- t(species_table)
 
   if (is.null(rownames(species_table)) || is.null(colnames(species_table)))
-    stop("`species_table` needs species names and sample names (row and column names). ",
-         "If species are columns, set taxa_are_rows = FALSE.")
+    stop("`species_table` needs species names and sample names (row and column names). ")
   if (anyNA(species_table))
     stop("`species_table` contains NA values.")
   if (any(species_table < 0))
     stop("`species_table` contains negative values.")
+  if (!is.numeric(detection_threshold) || length(detection_threshold) != 1 ||
+      is.na(detection_threshold) || detection_threshold < 0 || detection_threshold >= 100)
+    stop("`detection_threshold` must be between 0% and 100%.")
 
   # Remove 0 columns, Samples with no bacteria detected.
   n_samples_input <- ncol(species_table)
@@ -74,23 +123,61 @@ OraCol <- function(species_table = NULL,
   }
   if (ncol(species_table) == 0) stop("All samples have zero total abundance.")
 
-  # Relative abundance:
+  # Relative abundance (RA):
   rel_ab <- sweep(species_table, 2, colSums(species_table), "/")
 
-  ############## Substitute the oral taxa into the species table ###############
-  species_table_taxa  <- rownames(species_table)
+  # Setting up Detection threshold AFTER RA is calculated.
+  # It is then re-scaled up to 1 again.
+  below_threshold <- rel_ab > 0 & rel_ab < detection_threshold / 100
+  if (any(below_threshold)) {
+    rel_ab[below_threshold] <- 0
+    if (any(colSums(rel_ab) == 0))
+      stop("`detection_threshold` is so high that some samples have nothing left.")
+    rel_ab <- sweep(rel_ab, 2, colSums(rel_ab), "/")
+  }
 
-  # Check to see if the rownames are NCBI ID
+  ###############################################################################
+  ############## Substitute the oral taxa into the species table ################
+  ###############################################################################
+  species_table_taxa  <- rownames(species_table)
+  cleaned_taxa_name   <- clean_name(species_table_taxa)
+  species_ids         <- rep(NA_character_, length(cleaned_taxa_name))
+
+  # Detection process:
+  #          - First check if it is NCBI ID already (save time)
+  #          - Second check if species name match with reference database.
+  #          - Third check with TaxSEA internal db and unmatched are searched online.
+
+  # Step 1: row names that are only digits are already NCBI IDs.
   is_id <- grepl("^[0-9]+$", species_table_taxa)
-  # Sort the ID into one list (kept out of the search)
-  species_ids <- ifelse(is_id, species_table_taxa, NA_character_)
-  # Search the rest:
-  if (any(!is_id)) {
-    names_to_look_up <- species_table_taxa[!is_id]
-    ncbi_lookup <- TaxSEA::get_ncbi_taxon_ids(names_to_look_up)
-    species_ids[!is_id] <- vapply(ncbi_lookup[names_to_look_up],
-                                  function(v) if (is.null(v)) NA_character_ else as.character(v[1]),
-                                  character(1), USE.NAMES = FALSE)
+  species_ids[is_id] <- species_table_taxa[is_id]
+
+  # Step 2: names in the oral db (all definitions together): take the ID from the list.
+  old_names   <- strsplit(Oral_taxa$old_names, ";")
+  known_names <- c(Oral_taxa$name, Oral_taxa$new_name, unlist(old_names))
+  known_ids   <- c(Oral_taxa$ncbi_id, Oral_taxa$ncbi_id, rep(Oral_taxa$ncbi_id, lengths(old_names)))
+  todo <- is.na(species_ids)
+  species_ids[todo] <- known_ids[match(tolower(cleaned_taxa_name[todo]), tolower(known_names))]
+
+  # Step 3: everything else goes to TaxSEA:
+  todo <- is.na(species_ids)
+  if (any(todo)) {
+    ncbi_lookup <- NULL
+    for (attempt in 1:3) {
+      #
+      ncbi_lookup <- tryCatch(as.list(TaxSEA::get_ncbi_taxon_ids(unique(cleaned_taxa_name[todo]))),
+                              error = function(e) NULL)
+      if (!is.null(ncbi_lookup)) break
+      if (attempt < 3) {
+        # message("NCBI refused a request. Waiting 10 seconds, then trying again.")
+        Sys.sleep(10)
+      }
+    }
+    if (is.null(ncbi_lookup))
+      stop("NCBI is not answering (too many requests).")
+    species_ids[todo] <- vapply(ncbi_lookup[cleaned_taxa_name[todo]],
+                                function(v) if (is.null(v)) NA_character_ else as.character(v[1]),
+                                character(1), USE.NAMES = FALSE)
   }
 
   is_oral <- !is.na(species_ids) & species_ids %in% oral_taxa_id
@@ -98,8 +185,7 @@ OraCol <- function(species_table = NULL,
   if (!any(is_oral)) {
     stop("No taxa in `species_table` matched the oral definition. ")}
 
-  # Creating a matching table for downstream rechecking:
-  # NCBI_ID is NA when TaxSEA could not find the name.
+  # Matching dataframe for rechecking
   matching <- data.frame(input_name = species_table_taxa,
                          NCBI_ID    = species_ids,
                          is_oral    = is_oral,
