@@ -50,7 +50,8 @@ The Detection are divided into 3 steps asking basic questions:
 \enumerate{
 \item Is the species detected in NCBI ID format
 \item Does its name matched with the Oral databases (old or new)
-\item Does it match with TaxSEA internal databases or does it need an Online look up
+\item Is it in OraCol's NCBI name list (\link{NCBI_lookup}), which was built once from NCBI so
+no internet connection is needed
 }
 
 With these steps, the aim is to convert the bacteria species name into ncbi id for easier comparison.

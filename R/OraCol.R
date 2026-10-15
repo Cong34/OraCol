@@ -14,7 +14,7 @@
 #                              abundance, prevalence, mean and median CLR.
 #     $Summary_table_samples   One row per sample: oral relative abundance sum, oral CLR sum and
 #                              mean, oral richness + Shannon, whole-community richness + Shannon.
-# Dependencies: TaxSEA (NCBI taxon ID lookup).
+# Dependencies: none beyond R itself (stats and utils ship with R).
 ##############################################################################################
 ###################### Main function #########################################################
 #' Summarise oral bacteria in a metagenomic species table
@@ -41,7 +41,8 @@
 #'
 #' 1. Is the species detected in NCBI ID format
 #' 2. Does its name matched with the Oral databases (old or new)
-#' 3. Does it match with TaxSEA internal databases or does it need an Online look up
+#' 3. Is it in OraCol's NCBI name list ([NCBI_lookup]), which was built once from NCBI so
+#'    no internet connection is needed
 #'
 #' With these steps, the aim is to convert the bacteria species name into ncbi id for easier comparison.
 #' A species counts as oral when its ID is in the chosen oral database.
@@ -81,8 +82,9 @@ OraCol <- function(species_table = NULL,
                    detection_threshold = 0.001) {
   # First Define the Oral definition:
   oral_definition <- match.arg(oral_definition)
-  # Load the oral databases that ship in the package's data/ folder.
+  # Load the oral databases and the NCBI name list that ship in the package's data/ folder.
   utils::data("Oral_db", package = "OraCol", envir = environment())
+  utils::data("NCBI_lookup", package = "OraCol", envir = environment())
   Oral_taxa <- Oral_db[[oral_definition]]
 
   # Some lists contain the same NCBI ID more than once, so count unique IDs only.
@@ -140,45 +142,41 @@ OraCol <- function(species_table = NULL,
   ############## Substitute the oral taxa into the species table ################
   ###############################################################################
   species_table_taxa  <- rownames(species_table)
-  cleaned_taxa_name   <- clean_name(species_table_taxa)
+
+  ### Clean up rownames:
+  cleaned_taxa_name <- sub(".*\\|", "", species_table_taxa)
+  cleaned_taxa_name <- sub("^[a-z]__", "", cleaned_taxa_name)
+  cleaned_taxa_name <- trimws(gsub("[_ ]+", " ", cleaned_taxa_name))
+
+  # Names are compared ignoring capitals and punctuation, so "Veillonella_sp_T11011_6"
+  # (MetaPhlAn) matches "Veillonella sp. T11011-6" (NCBI).
+  name_key <- function(x) tolower(trimws(gsub("[^A-Za-z0-9]+", " ", x)))
+
   species_ids         <- rep(NA_character_, length(cleaned_taxa_name))
 
   # Detection process:
   #          - First check if it is NCBI ID already (save time)
   #          - Second check if species name match with reference database.
-  #          - Third check with TaxSEA internal db and unmatched are searched online.
+  #          - Third check OraCol's NCBI name list (NCBI_lookup). No internet is needed.
 
   # Step 1: row names that are only digits are already NCBI IDs.
   is_id <- grepl("^[0-9]+$", species_table_taxa)
   species_ids[is_id] <- species_table_taxa[is_id]
 
-  # Step 2: names in the oral db (all definitions together): take the ID from the list.
+  # Step 2: names in the chosen oral database (current, new or old names): take the ID from it.
   old_names   <- strsplit(Oral_taxa$old_names, ";")
   known_names <- c(Oral_taxa$name, Oral_taxa$new_name, unlist(old_names))
   known_ids   <- c(Oral_taxa$ncbi_id, Oral_taxa$ncbi_id, rep(Oral_taxa$ncbi_id, lengths(old_names)))
   todo <- is.na(species_ids)
-  species_ids[todo] <- known_ids[match(tolower(cleaned_taxa_name[todo]), tolower(known_names))]
+  species_ids[todo] <- known_ids[match(name_key(cleaned_taxa_name[todo]), name_key(known_names))]
 
-  # Step 3: everything else goes to TaxSEA:
+  # Step 3: everything else is looked up in OraCol's NCBI name list (no internet needed).
   todo <- is.na(species_ids)
-  if (any(todo)) {
-    ncbi_lookup <- NULL
-    for (attempt in 1:3) {
-      #
-      ncbi_lookup <- tryCatch(as.list(TaxSEA::get_ncbi_taxon_ids(unique(cleaned_taxa_name[todo]))),
-                              error = function(e) NULL)
-      if (!is.null(ncbi_lookup)) break
-      if (attempt < 3) {
-        # message("NCBI refused a request. Waiting 10 seconds, then trying again.")
-        Sys.sleep(10)
-      }
-    }
-    if (is.null(ncbi_lookup))
-      stop("NCBI is not answering (too many requests).")
-    species_ids[todo] <- vapply(ncbi_lookup[cleaned_taxa_name[todo]],
-                                function(v) if (is.null(v)) NA_character_ else as.character(v[1]),
-                                character(1), USE.NAMES = FALSE)
-  }
+  species_ids[todo] <- NCBI_lookup$ncbi_id[match(name_key(cleaned_taxa_name[todo]),
+                                                 name_key(NCBI_lookup$name))]
+  if (anyNA(species_ids))
+    message(sum(is.na(species_ids)), " of ", length(species_ids), " row name(s) are not in OraCol's ",
+            "NCBI name list and count as not oral (NCBI_ID is NA in $matching).")
 
   is_oral <- !is.na(species_ids) & species_ids %in% oral_taxa_id
 

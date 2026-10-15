@@ -17,8 +17,8 @@ one row per taxon and these columns:
 }
 }
 \source{
-HOMD: Chen et al. 2010. eHOMD: Escapa et al. 2018. OES: Manghi 2025.
-mBodyMap: Jin et al. 2022. Names were taken from the NCBI Taxonomy database.
+The references for each database are given under Details. Names were taken from
+the NCBI Taxonomy database.
 }
 \usage{
 data(Oral_db)
@@ -28,21 +28,40 @@ The four oral definitions that \code{\link[=OraCol]{OraCol()}} can use. Each one
 database considers oral.
 }
 \details{
-The four databases:\tabular{lll}{
-   Database \tab Oral taxa list \tab Reference \cr
-   \code{HOMD} \tab Human Oral Microbiome Database \tab Chen et al. 2010 \cr
-   \code{eHOMD} \tab expanded HOMD (Add Nasal) \tab Escapa et al. 2018 \cr
-   \code{OES} \tab Oral Enrichment Score at 1\% \tab Manghi, 2025 \cr
-   \code{mBodyMap} \tab mBodyMap_Oral Healthy \tab Jin et al. 2022 \cr
+\strong{HOMD}: Human Oral Microbiome Database (Chen et al. 2010)
+\itemize{
+\item DB size: 340 taxa
+\item Samples size: 33k 16S RNA clone
+\item Sequencing method: Full length 16S
+\item Species definition: 98.5\% 16S identity
+\item Status: Healthy and diseases
 }
 
+\strong{eHOMD}: expanded HOMD (Add Nasal) (Escapa et al. 2018)
+\itemize{
+\item DB size: 404 taxa
+\item Samples size: 44k 16S RNA clone
+\item Sequencing method: Full length 16S
+\item Species definition: 98.5\% 16S identity
+\item Status: Healthy and diseases
+}
 
-More details on how each one was built:\tabular{llllll}{
-   Database \tab DB size \tab Samples size \tab Sequencing method \tab Species definition \tab Status \cr
-   \code{HOMD} \tab 340 taxa \tab 33k 16S RNA clone \tab Full length 16S \tab 98.5\% 16S identity \tab Healthy and diseases \cr
-   \code{eHOMD} \tab 404 taxa \tab 44k 16S RNA clone \tab Full length 16S \tab 98.5\% 16S identity \tab Healthy and diseases \cr
-   \code{OES} \tab 305 taxa \tab 857 metagenomic sample \tab Shotgun \tab 1\% threshold prevalence \tab Healthy and diseases \cr
-   \code{mBodyMap} \tab 351 taxa \tab 8077 samples \tab 16S + Shotgun \tab NCBI taxonomy (>=2 samples + 0.01\% RA) \tab Healthy \cr
+\strong{OES}: Oral Enrichment Score at 1\% (Manghi, 2025)
+\itemize{
+\item DB size: 305 taxa
+\item Samples size: 857 metagenomic sample
+\item Sequencing method: Shotgun
+\item Species definition: 1\% threshold prevalence
+\item Status: Healthy and diseases
+}
+
+\strong{mBodyMap}: mBodyMap_Oral Healthy (Jin et al. 2022)
+\itemize{
+\item DB size: 351 taxa
+\item Samples size: 8077 samples
+\item Sequencing method: 16S + Shotgun
+\item Species definition: NCBI taxonomy (>=2 samples + 0.01\% RA)
+\item Status: Healthy
 }
 }
 \examples{

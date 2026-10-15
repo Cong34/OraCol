@@ -10,7 +10,6 @@ prevalence, centred log-ratio (CLR) values, richness and Shannon diversity.
 
 R version 4.5.0 or newer. 
 
-Dependency: [TaxSEA](https://bioconductor.org/packages/TaxSEA) (from Bioconductor).
 
 ```r
 install.packages("remotes")
@@ -43,8 +42,10 @@ OraCol_res$Summary_table_species   # one row per oral species
   set to 0, so a raw table and an already-filtered table give the same results. Use
   `detection_threshold = 0` to keep every value.
 
-Species names are matched to NCBI taxonomy IDs with TaxSEA. Names missing from TaxSEA's built-in
-list are looked up online at NCBI, which is slower and needs an internet connection.
+Species names are matched to NCBI taxonomy IDs offline, using the chosen oral database (current
+and old names) and OraCol's own list of names and IDs (`?NCBI_lookup`), so no internet connection
+is needed. A name found in neither counts as not oral; these names are shown in `$matching` with
+`NCBI_ID = NA`.
 
 ## Oral definitions
 

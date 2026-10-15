@@ -11,7 +11,8 @@
 # so devtools::check() / R CMD check (which run every .R file in tests/ automatically) also
 # report the failure.
 #
-# All species names used here are in TaxSEA's offline lookup, so no internet is needed.
+# OraCol() never uses the internet: names are matched to the oral database and to OraCol's own
+# NCBI name list (data/NCBI_lookup.rda).
 ##############################################################################################
 
 
@@ -129,7 +130,7 @@ check("Median_RA = 0.30 and 0.10", same(spp$Median_RA, c(0.30, 0.10)))
 check("Sum_RA = 1.05 and 0.35", same(spp$Sum_RA, c(1.05, 0.35)))
 check("SD_RA is the SD of each species' relative abundances",
       same(spp$SD_RA, c(sd(c(0.30, 0.25, 0.50)), sd(c(0.10, 0.25, 0)))))
-check("NCBI_ID comes from TaxSEA (43675, 28037)", identical(spp$NCBI_ID, c("43675", "28037")))
+check("NCBI_ID comes from the oral database (43675, 28037)", identical(spp$NCBI_ID, c("43675", "28037")))
 
 # CLR. Pseudocount = half the smallest non-zero relative abundance in the table: 0.1 / 2 = 0.05.
 # CLR = log(value + 0.05) minus the mean of those logs over ALL 4 species in the sample
@@ -214,7 +215,11 @@ res_ex <- run(ex)
 prev   <- res_ex$Summary_table_species$Prevalence
 ra_sum <- res_ex$Summary_table_samples$Oral_RA_sum
 
-check("every species gets an NCBI ID (no online lookups needed)", !anyNA(res_ex$matching$NCBI_ID))
+# NCBI no longer recognises the name "Ruminococcus bicirculans", so it is the one species in the
+# example file without an ID (it is not oral, so this does not change the oral results).
+no_id <- res_ex$matching$input_name[is.na(res_ex$matching$NCBI_ID)]
+check("every species gets an NCBI ID, except Ruminococcus bicirculans (not recognised by NCBI)",
+      all(no_id %in% "Ruminococcus_bicirculans"))
 check("one matching row per species and one summary row per sample",
       nrow(res_ex$matching) == nrow(ex) && nrow(res_ex$Summary_table_samples) == ncol(ex))
 check("one species summary row per oral species",
@@ -263,6 +268,45 @@ check("negative threshold -> 'detection_threshold' error",
       grepl("detection_threshold", error_message(run(toy, detection_threshold = -1))))
 check("threshold that removes everything -> 'nothing left' error",
       grepl("nothing left", error_message(run(toy, detection_threshold = 99))))
+
+
+###################### 7. Name matching #######################################################
+cat("\n== 7. Name matching ==\n")
+# The same 4 species written in different ways must get the same NCBI IDs.
+ids_for <- function(names) {
+  m <- toy
+  rownames(m) <- names
+  run(m)$matching$NCBI_ID
+}
+expected_ids <- c("28037", "43675", "820", "853")
+check("names with spaces instead of underscores are recognised",
+      identical(ids_for(c("Streptococcus mitis", "Rothia mucilaginosa", "Bacteroides uniformis",
+                          "Faecalibacterium prausnitzii")), expected_ids))
+check("MetaPhlAn names (s__ prefix and full lineage) are recognised",
+      identical(ids_for(c("s__Streptococcus_mitis", "k__Bacteria|g__Rothia|s__Rothia_mucilaginosa",
+                          "s__Bacteroides_uniformis", "s__Faecalibacterium_prausnitzii")), expected_ids))
+check("capital letters do not matter", identical(ids_for(tolower(rownames(toy))), expected_ids))
+
+# Old name of an oral species: Actinomyces odontolyticus is now Schaalia odontolytica (1660).
+old_name <- toy
+rownames(old_name)[1] <- "Actinomyces_odontolyticus"
+res_old <- run(old_name)
+check("an old species name is matched to its oral species (Actinomyces odontolyticus -> 1660)",
+      identical(res_old$matching$NCBI_ID[1], "1660") && res_old$matching$is_oral[1])
+
+# A name that is in no list gets no ID, counts as not oral, and does not stop the run.
+unknown <- toy
+rownames(unknown)[4] <- "GGB1234_SGB5678"
+res_unknown <- run(unknown)
+check("a name in no list gets NCBI_ID NA and counts as not oral",
+      is.na(res_unknown$matching$NCBI_ID[4]) && !res_unknown$matching$is_oral[4])
+
+# The name list itself
+lookup <- new.env()
+suppressWarnings(utils::data("NCBI_lookup", package = "OraCol", envir = lookup))
+check("data/NCBI_lookup.rda provides NCBI_lookup, with no name listed twice",
+      exists("NCBI_lookup", envir = lookup, inherits = FALSE) &&
+        !anyDuplicated(tolower(lookup$NCBI_lookup$name)))
 
 
 ###################### Summary ###############################################################

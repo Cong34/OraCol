@@ -16,9 +16,7 @@ Encoding: UTF-8
 Depends: R (>= 4.5.0)
 Imports:
     stats,
-    utils,
-    TaxSEA
+    utils
 LazyData: false
-biocViews:
 Config/roxygen2/version: 8.1.0
 Roxygen: list(markdown = TRUE)
