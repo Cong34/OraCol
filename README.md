@@ -10,8 +10,7 @@ prevalence, centred log-ratio (CLR) values, richness and Shannon diversity.
 
 R version 4.5.0 or newer. 
 
-Dependency: [TaxSEA](https://bioconductor.org/packages/TaxSEA) (from Bioconductor).
-
+Dependency: base R
 ```r
 install.packages("remotes")
 remotes::install_github("Cong34/OraCol")
