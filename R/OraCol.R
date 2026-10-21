@@ -14,6 +14,9 @@
 #                              abundance, prevalence, mean and median CLR.
 #     $Summary_table_samples   One row per sample: oral relative abundance sum, oral CLR sum and
 #                              mean, oral richness + Shannon, whole-community richness + Shannon.
+#                              Samples with no oral species are left out by default.
+#     $matching                Every input species, its NCBI ID and whether it counted as oral.
+#     $no_oral_samples         Samples with no oral species detected (same columns as above).
 # Dependencies: none beyond R itself (stats and utils ship with R).
 ##############################################################################################
 ###################### Main function #########################################################
@@ -32,6 +35,9 @@
 #'   Use `FALSE` if it is the other way round.
 #' @param detection_threshold Lowest relative abundance at which a species is considered
 #'   detected in the sample. The default `0.001` means 0.001%.
+#' @param remove_no_oral `TRUE` (default) removes samples with no oral species detected
+#'   from `Summary_table_samples`. They are listed in `no_oral_samples` instead. Use
+#'   `FALSE` to keep them in `Summary_table_samples`.
 #'
 #' @details
 #' OraCol first take a Species table and convert it to relative abundance to apply its threshold.
@@ -49,6 +55,11 @@
 #'
 #' CLR values are calculated over the whole community and then subset to the oral
 #' species. Zeros are handled by adding half the smallest non-zero relative abundance.
+#' In a sample with no oral species detected, every oral species gets the same small
+#' negative CLR value. That value comes only from the non-oral species, so it carries
+#' no oral signal. For this reason such samples are left out of `Summary_table_samples`
+#' by default (see `remove_no_oral`). They stay in `species_table_oral`,
+#' `species_table_oral_CLR` and the prevalence values in `Summary_table_species`.
 #'
 #' @section Oral definitions:
 #' * `"HOMD"`: Human Oral Microbiome Database (Chen et al. 2010).
@@ -56,14 +67,17 @@
 #' * `"OES"`: Oral Enrichment Score at 1% (Manghi 2025).
 #' * `"mBodyMap"`: mBodyMap, oral sites of healthy people only (Jin et al. 2022).
 #'
-#' @return A list with five elements:
+#' @return A list with six elements:
 #' * `species_table_oral`: relative abundance (0 to 1) of the oral species in each sample.
 #' * `species_table_oral_CLR`: CLR values of the oral species.
 #' * `Summary_table_species`: one row per oral species, sorted by prevalence.
 #' * `Summary_table_samples`: one row per sample, with the oral relative abundance,
-#'   richness and Shannon diversity.
+#'   richness and Shannon diversity. By default, samples with no oral species detected
+#'   are left out.
 #' * `matching`: every input species, its NCBI ID (`NA` if none was found) and whether it
 #'   counted as oral.
+#' * `no_oral_samples`: the samples with no oral species detected, with the same columns
+#'   as `Summary_table_samples`. Empty if every sample has oral species.
 #'
 #' @examples
 #' # Example table shipped with the package: 420 species x 40 samples
@@ -79,7 +93,8 @@
 OraCol <- function(species_table = NULL,
                    oral_definition = c("HOMD", "eHOMD", "OES", "mBodyMap"),
                    taxa_are_rows = TRUE,
-                   detection_threshold = 0.001) {
+                   detection_threshold = 0.001,
+                   remove_no_oral = TRUE) {
   # First Define the Oral definition:
   oral_definition <- match.arg(oral_definition)
   # Load the oral databases and the NCBI name list that ship in the package's data/ folder.
@@ -114,6 +129,8 @@ OraCol <- function(species_table = NULL,
   if (!is.numeric(detection_threshold) || length(detection_threshold) != 1 ||
       is.na(detection_threshold) || detection_threshold < 0 || detection_threshold >= 100)
     stop("`detection_threshold` must be between 0% and 100%.")
+  if (!is.logical(remove_no_oral) || length(remove_no_oral) != 1 || is.na(remove_no_oral))
+    stop("`remove_no_oral` must be TRUE or FALSE.")
 
   # Remove 0 columns, Samples with no bacteria detected.
   n_samples_input <- ncol(species_table)
@@ -261,12 +278,31 @@ OraCol <- function(species_table = NULL,
     row.names = NULL, stringsAsFactors = FALSE
   )
 
+  # Samples with no oral species detected: their oral CLR values only reflect the rest of
+  # the community (every oral zero gets the same small negative CLR), so by default they are
+  # moved out of the sample summary and listed in $no_oral_samples instead.
+  no_oral <- Summary_table_samples$Oral_richness == 0
+  no_oral_samples <- Summary_table_samples[no_oral, , drop = FALSE]
+  rownames(no_oral_samples) <- NULL
+  if (any(no_oral)) {
+    if (remove_no_oral) {
+      message(sum(no_oral), " sample(s) with no oral species detected were removed from ",
+              "$Summary_table_samples and listed in $no_oral_samples.")
+      Summary_table_samples <- Summary_table_samples[!no_oral, , drop = FALSE]
+      rownames(Summary_table_samples) <- NULL
+      if (nrow(Summary_table_samples) == 0)
+        warning("No sample has any oral species detected, so $Summary_table_samples is empty.")
+    } else {
+      message(sum(no_oral), " sample(s) have no oral species detected (listed in $no_oral_samples).")
+    }
+  }
 
   results_object = list("species_table_oral" = species_table_oral,
                         "species_table_oral_CLR" = species_table_oral_CLR,
                         "Summary_table_species" = Summary_table_species,
                         "Summary_table_samples" = Summary_table_samples,
-                        "matching" = matching)
+                        "matching" = matching,
+                        "no_oral_samples" = no_oral_samples)
   return(results_object)
 }
 

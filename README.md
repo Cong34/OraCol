@@ -85,8 +85,13 @@ names(Oral_db)       # "OES" "mBodyMap" "HOMD" "eHOMD"
 | `species_table_oral` | Relative abundance of the oral species in each sample |
 | `species_table_oral_CLR` | Center Log ratio values of the oral species |
 | `Summary_table_species` | Summary of species: relative abundance, prevalence, number of samples detected, and CLR |
-| `Summary_table_samples` | Summary of sample: oral relative abundance, oral CLR sum, richness and Shannon diversity |
+| `Summary_table_samples` | Summary of sample: oral relative abundance, oral CLR sum, richness and Shannon diversity. Samples with no oral species are left out by default |
 | `matching` | Every input species, its NCBI ID (`NA` if not found) and whether it counted as oral |
+| `no_oral_samples` | Samples with no oral species detected, with the same columns as `Summary_table_samples` |
+
+Samples with no oral species detected are removed from `Summary_table_samples` by default.
+In those samples every oral species is zero, so the oral CLR values come only from the other
+species and carry no oral signal. Use `remove_no_oral = FALSE` to keep them.
 
 
 

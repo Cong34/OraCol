@@ -182,11 +182,40 @@ check("a name in no list gets NCBI_ID NA and counts as not oral",
       is.na(unknown$NCBI_ID[4]) && !unknown$is_oral[4])
 
 
-###################### 6. Output structure ###################################################
-cat("\n== 6. Output structure ==\n")
-check("the result has the 5 expected parts",
+###################### 6. Samples with no oral species ######################################
+cat("\n== 6. Samples with no oral species ==\n")
+# S4 has only the two non-oral species, so it has no oral signal.
+toy_no_oral <- cbind(toy, S4 = c(0, 0, 50, 50))
+res_rm   <- run(toy_no_oral)
+res_keep <- run(toy_no_oral, remove_no_oral = FALSE)
+
+check("by default S4 is removed from Summary_table_samples and listed in no_oral_samples",
+      identical(res_rm$Summary_table_samples$Sample, c("S1", "S2", "S3")) &&
+        identical(res_rm$no_oral_samples$Sample, "S4") &&
+        identical(names(res_rm$no_oral_samples), names(res_rm$Summary_table_samples)))
+check("the default prints a message saying how many samples were removed",
+      any(grepl("1 sample\\(s\\) with no oral",
+                withCallingHandlers(
+                  { msgs <- character(0); OraCol::OraCol(toy_no_oral); msgs },
+                  message = function(m) { msgs <<- c(msgs, conditionMessage(m)); invokeRestart("muffleMessage") }))))
+check("S4 stays in the species tables, so prevalence still counts it",
+      "S4" %in% colnames(res_rm$species_table_oral) &&
+        same(res_rm$Summary_table_species$Prevalence, c(3 / 4, 2 / 4)))
+check("remove_no_oral = FALSE keeps S4 in Summary_table_samples and still lists it",
+      identical(res_keep$Summary_table_samples$Sample, c("S1", "S2", "S3", "S4")) &&
+        identical(res_keep$no_oral_samples$Sample, "S4"))
+check("no_oral_samples is empty when every sample has oral species",
+      nrow(res$no_oral_samples) == 0)
+check("remove_no_oral that is not TRUE or FALSE -> error",
+      grepl("remove_no_oral", error_of(run(toy, remove_no_oral = "yes"))))
+
+
+###################### 7. Output structure ###################################################
+cat("\n== 7. Output structure ==\n")
+check("the result has the 6 expected parts",
       identical(names(res), c("species_table_oral", "species_table_oral_CLR",
-                              "Summary_table_species", "Summary_table_samples", "matching")))
+                              "Summary_table_species", "Summary_table_samples", "matching",
+                              "no_oral_samples")))
 check("Summary_table_samples has the expected columns, one row per sample",
       identical(names(smp), c("Sample", "Oral_RA_sum", "Oral_CLR_sum", "Oral_CLR_mean", "Oral_richness",
                               "Oral_shannon", "Total_richness", "Total_shannon")) &&
@@ -199,8 +228,8 @@ check("matching has one row per input species, in input order",
         identical(res$matching$is_oral, c(TRUE, TRUE, FALSE, FALSE)))
 
 
-###################### 7. Example data (inst/extdata/sampling_data.csv) #####################
-cat("\n== 7. Example data ==\n")
+###################### 8. Example data (inst/extdata/sampling_data.csv) #####################
+cat("\n== 8. Example data ==\n")
 example <- read.csv(system.file("extdata", "sampling_data.csv", package = "OraCol"),
                     row.names = 1, check.names = FALSE)
 res_ex <- run(example)

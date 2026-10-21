@@ -8,7 +8,8 @@ OraCol(
   species_table = NULL,
   oral_definition = c("HOMD", "eHOMD", "OES", "mBodyMap"),
   taxa_are_rows = TRUE,
-  detection_threshold = 0.001
+  detection_threshold = 0.001,
+  remove_no_oral = TRUE
 )
 }
 \arguments{
@@ -24,17 +25,24 @@ Use \code{FALSE} if it is the other way round.}
 
 \item{detection_threshold}{Lowest relative abundance at which a species is considered
 detected in the sample. The default \code{0.001} means 0.001\%.}
+
+\item{remove_no_oral}{\code{TRUE} (default) removes samples with no oral species detected
+from \code{Summary_table_samples}. They are listed in \code{no_oral_samples} instead. Use
+\code{FALSE} to keep them in \code{Summary_table_samples}.}
 }
 \value{
-A list with five elements:
+A list with six elements:
 \itemize{
 \item \code{species_table_oral}: relative abundance (0 to 1) of the oral species in each sample.
 \item \code{species_table_oral_CLR}: CLR values of the oral species.
 \item \code{Summary_table_species}: one row per oral species, sorted by prevalence.
 \item \code{Summary_table_samples}: one row per sample, with the oral relative abundance,
-richness and Shannon diversity.
+richness and Shannon diversity. By default, samples with no oral species detected
+are left out.
 \item \code{matching}: every input species, its NCBI ID (\code{NA} if none was found) and whether it
 counted as oral.
+\item \code{no_oral_samples}: the samples with no oral species detected, with the same columns
+as \code{Summary_table_samples}. Empty if every sample has oral species.
 }
 }
 \description{
@@ -59,6 +67,11 @@ A species counts as oral when its ID is in the chosen oral database.
 
 CLR values are calculated over the whole community and then subset to the oral
 species. Zeros are handled by adding half the smallest non-zero relative abundance.
+In a sample with no oral species detected, every oral species gets the same small
+negative CLR value. That value comes only from the non-oral species, so it carries
+no oral signal. For this reason such samples are left out of \code{Summary_table_samples}
+by default (see \code{remove_no_oral}). They stay in \code{species_table_oral},
+\code{species_table_oral_CLR} and the prevalence values in \code{Summary_table_species}.
 }
 \section{Oral definitions}{
 
