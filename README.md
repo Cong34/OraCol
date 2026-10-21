@@ -8,13 +8,8 @@ prevalence, centred log-ratio (CLR) values, richness and Shannon diversity.
 
 ## Installation
 
-R version 4.5.0 or newer. 
+R version 4.5.0. 
 
-<<<<<<< HEAD
-
-=======
-Dependency: base R
->>>>>>> 1e94e0f48f5c9f59a8051cc134fbc758996b798b
 ```r
 install.packages("remotes")
 remotes::install_github("Cong34/OraCol")
