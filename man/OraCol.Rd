@@ -6,7 +6,8 @@
 \usage{
 OraCol(
   species_table = NULL,
-  oral_definition = c("HOMD", "eHOMD", "OES", "mBodyMap"),
+  oral_definition = c("HOMD", "eHOMD", "OES", "mBodyMap", "eHOMD_OES", "eHOMD_OES_oral",
+    "eHOMD_OES_oropharyngeal"),
   taxa_are_rows = TRUE,
   detection_threshold = 0.001,
   remove_no_oral = TRUE
@@ -18,13 +19,15 @@ proportions or percentages). Row names are species names or NCBI taxonomy IDs;
 column names are sample names.}
 
 \item{oral_definition}{The oral database to use: \code{"HOMD"} (default), \code{"eHOMD"},
-\code{"OES"} or \code{"mBodyMap"}. See the section \strong{Oral definitions}.}
+\code{"OES"}, \code{"mBodyMap"}, or one of the combined eHOMD + OES databases: \code{"eHOMD_OES"},
+\code{"eHOMD_OES_oral"} or \code{"eHOMD_OES_oropharyngeal"}. See the section \strong{Oral definitions}.}
 
 \item{taxa_are_rows}{\code{TRUE} (default) if species are rows and samples are columns.
 Use \code{FALSE} if it is the other way round.}
 
 \item{detection_threshold}{Lowest relative abundance at which a species is considered
-detected in the sample. The default \code{0.001} means 0.001\%.}
+detected in the sample. The default \code{0.001} means 0.001\%. Must be above 0, because half
+of it is also the pseudocount for the CLR values.}
 
 \item{remove_no_oral}{\code{TRUE} (default) removes samples with no oral species detected
 from \code{Summary_table_samples}. They are listed in \code{no_oral_samples} instead. Use
@@ -46,7 +49,7 @@ as \code{Summary_table_samples}. Empty if every sample has oral species.
 }
 }
 \description{
-Finds which species in a species table are oral bacteria, using one of four oral
+Finds which species in a species table are oral bacteria, using one of seven oral
 reference databases, and returns per-species and per-sample summaries: relative
 abundance, prevalence, centred log-ratio (CLR) values, richness and Shannon diversity.
 }
@@ -66,7 +69,14 @@ With these steps, the aim is to convert the bacteria species name into ncbi id f
 A species counts as oral when its ID is in the chosen oral database.
 
 CLR values are calculated over the whole community and then subset to the oral
-species. Zeros are handled by adding half the smallest non-zero relative abundance.
+species. Each sample is centred on the mean log relative abundance of its own 20 most
+abundant detected species (all of them if fewer than 20 are detected), not on the mean
+of every species in the table. Zeros never enter this centre, so a sample that loses rare
+species (as low-diversity guts do) does not get higher oral CLR values for that reason
+alone. Zeros are handled by adding half the detection threshold, as a proportion (the
+default 0.001\% gives 0.000005), so a sample's values do not depend on which other samples
+are in the table.
+
 In a sample with no oral species detected, every oral species gets the same small
 negative CLR value. That value comes only from the non-oral species, so it carries
 no oral signal. For this reason such samples are left out of \code{Summary_table_samples}
@@ -76,11 +86,18 @@ by default (see \code{remove_no_oral}). They stay in \code{species_table_oral},
 \section{Oral definitions}{
 
 \itemize{
-\item \code{"HOMD"}: Human Oral Microbiome Database (Chen et al. 2010).
+\item \code{"HOMD"}: Human Oral Microbiome Database (Chen et al. 2010). 340 taxa.
 \item \code{"eHOMD"}: expanded HOMD, which adds nasal and upper-airway taxa (Escapa et al. 2018).
-\item \code{"OES"}: Oral Enrichment Score at 1\% (Manghi 2025).
-\item \code{"mBodyMap"}: mBodyMap, oral sites of healthy people only (Jin et al. 2022).
+404 taxa.
+\item \code{"OES"}: Oral Enrichment Score at 1\% (Manghi 2025). 305 taxa.
+\item \code{"mBodyMap"}: mBodyMap, oral sites of healthy people only (Jin et al. 2022). 351 taxa.
+\item \code{"eHOMD_OES"}: eHOMD and OES combined. 525 taxa.
+\item \code{"eHOMD_OES_oral"}: \code{eHOMD_OES} for mainly oral microbes. 504 taxa, remove 21 generalists.
+\item \code{"eHOMD_OES_oropharyngeal"}: \code{eHOMD_OES} for microbes of the mouth and nasal passages. 517 taxa,
+remove 8 gut specific generalists.
 }
+
+\link{Oral_db} gives more details on each database and how the combined ones were built.
 }
 
 \examples{

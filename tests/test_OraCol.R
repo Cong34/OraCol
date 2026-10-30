@@ -32,8 +32,11 @@ cat("\n== 1. Databases ==\n")
 data("Oral_db", package = "OraCol")
 data("NCBI_lookup", package = "OraCol")
 
-check("Oral_db has the four oral definitions",
-      all(c("HOMD", "eHOMD", "OES", "mBodyMap") %in% names(Oral_db)))
+# The oral definitions OraCol() offers (its oral_definition choices).
+definitions <- c("HOMD", "eHOMD", "OES", "mBodyMap",
+                 "eHOMD_OES", "eHOMD_OES_oral", "eHOMD_OES_oropharyngeal")
+check("Oral_db has the seven oral definitions",
+      all(definitions %in% names(Oral_db)))
 check("every oral database has the columns OraCol() uses: ncbi_id, name, new_name, old_names",
       all(sapply(Oral_db, function(d) all(c("ncbi_id", "name", "new_name", "old_names") %in% names(d)))))
 check("NCBI_lookup has the columns OraCol() uses: name, ncbi_id",
@@ -84,9 +87,11 @@ check("species summary: mean, median, sum and SD of relative abundance",
         same(spp$Sum_RA, c(1.05, 0.35)) &&
         same(spp$SD_RA, c(sd(c(0.30, 0.25, 0.50)), sd(c(0.10, 0.25, 0)))))
 
-# CLR: pseudocount = half the smallest non-zero relative abundance = 0.05.
-# CLR = log(value + 0.05) minus the mean of those logs over ALL 4 species in the sample.
-clr <- function(x) log(x + 0.05) - mean(log(x + 0.05))
+# CLR: pseudocount = half the detection threshold = 0.001 / 100 / 2.
+# Each sample is centred on the mean log of its 20 most abundant detected species. Every
+# toy sample has fewer than 20, so the centre is the mean over its detected species.
+pc  <- 0.001 / 100 / 2
+clr <- function(x) log(x + pc) - mean(log(x[x > 0] + pc))
 expected_clr <- cbind(S1 = clr(c(0.10, 0.30, 0.60, 0))[1:2],
                       S2 = clr(c(0.25, 0.25, 0.25, 0.25))[1:2],    # all equal, so 0
                       S3 = clr(c(0, 0.50, 0, 0.50))[1:2])
@@ -97,6 +102,19 @@ check("oral CLR sum and mean per sample, and mean CLR per species",
       same(smp$Oral_CLR_sum, unname(colSums(expected_clr))) &&
         same(smp$Oral_CLR_mean, unname(colMeans(expected_clr))) &&
         same(spp$Mean_CLR, unname(rowMeans(expected_clr))[2:1]))
+
+# Species that are absent everywhere must not move the CLR (the problem the new centre fixes).
+padded <- rbind(toy, matrix(0, 10, 3, dimnames = list(paste0("Absent_sp_", 1:10), colnames(toy))))
+check("adding species that are absent everywhere does not change the CLR",
+      same(run(padded)$species_table_oral_CLR, res$species_table_oral_CLR))
+
+# 25 species in one sample: the centre uses only the 20 most abundant (25 down to 6).
+big <- matrix(c(25, 1, 24:2), ncol = 1,
+              dimnames = list(c("Streptococcus_mitis", "Rothia_mucilaginosa", paste0("Other_sp_", 1:23)), "S1"))
+ra_big <- big[, 1] / sum(big)
+centre <- mean(log(sort(ra_big, decreasing = TRUE)[1:20] + pc))
+check("with more than 20 species detected, the centre uses the 20 most abundant",
+      same(run(big)$species_table_oral_CLR[, 1], log(ra_big[1:2] + pc) - centre))
 
 
 ###################### 3. Input formats and errors ###########################################
@@ -133,10 +151,10 @@ cat("\n== 4. Detection threshold ==\n")
 low <- matrix(c(100000, 300000, 600000,      0,     # S1, total 1,000,000
                      5, 499995, 250000, 250000),    # S2, total 1,000,000
               nrow = 4, dimnames = list(rownames(toy), c("S1", "S2")))
-kept    <- run(low, detection_threshold = 0)$Summary_table_samples
+kept    <- run(low, detection_threshold = 0.0001)$Summary_table_samples
 dropped <- run(low)$Summary_table_samples
 
-check("threshold 0 keeps the low value (S2: oral richness 2, oral share 0.5)",
+check("a lower threshold (0.0001%) keeps the low value (S2: oral richness 2, oral share 0.5)",
       same(kept$Oral_richness, c(2, 2)) && same(kept$Oral_RA_sum, c(0.4, 0.5)))
 # Default: the 5 becomes 0 and S2 is rescaled to the 999,995 that remain.
 check("the default threshold drops it (S2: oral richness 1, oral share 499995/999995)",
@@ -146,6 +164,7 @@ filtered <- low
 filtered["Streptococcus_mitis", "S2"] <- 0
 check("a raw table and an already-filtered table give the same results", same(run(filtered), run(low)))
 check("a negative threshold -> error", grepl("detection_threshold", error_of(run(toy, detection_threshold = -1))))
+check("a threshold of 0 -> error",     grepl("detection_threshold", error_of(run(toy, detection_threshold = 0))))
 check("a threshold that removes everything -> error", grepl("nothing left", error_of(run(toy, detection_threshold = 99))))
 
 
@@ -240,7 +259,7 @@ check("every species gets an NCBI ID, except Ruminococcus bicirculans",
       all(res_ex$matching$input_name[is.na(res_ex$matching$NCBI_ID)] %in% "Ruminococcus_bicirculans"))
 check("oral share is between 0 and 1, and prevalence is sorted from high to low",
       all(ra_sum >= 0 & ra_sum <= 1) && all(diff(prev) <= 0))
-for (definition in c("HOMD", "eHOMD", "OES", "mBodyMap"))
+for (definition in definitions)
   check(paste0("runs with oral_definition = \"", definition, "\" and finds oral species"),
         any(run(example, oral_definition = definition)$matching$is_oral))
 

@@ -1,10 +1,13 @@
 #' Oral reference databases used by OraCol
 #'
-#' The four oral definitions that [OraCol()] can use. Each one lists the taxa that the
-#' database considers oral.
+#' The seven oral definitions that [OraCol()] can use: four published oral databases
+#' (`HOMD`, `eHOMD`, `OES`, `mBodyMap`) and three that combine eHOMD and OES (`eHOMD_OES`,
+#' `eHOMD_OES_oral`, `eHOMD_OES_oropharyngeal`). Each one lists the taxa that the database
+#' considers oral. `HOMD` is the default.
 #'
-#' @format A named list of four data frames (`OES`, `mBodyMap`, `HOMD`, `eHOMD`), each with
-#' one row per taxon and these columns:
+#' @format A named list of seven data frames (`OES`, `mBodyMap`, `HOMD`, `eHOMD`,
+#' `eHOMD_OES`, `eHOMD_OES_oropharyngeal`, `eHOMD_OES_oral`), each with one row per taxon
+#' and these columns:
 #' * `ncbi_id`: NCBI taxonomy ID.
 #' * `name`: scientific name.
 #' * `rank`: taxonomic rank, for example `species` or `genus`.
@@ -45,13 +48,51 @@
 #' * Species definition: NCBI taxonomy (>=2 samples + 0.01% RA)
 #' * Status: Healthy
 #'
+#' **Combined eHOMD + OES databases**
+#'
+#' In addition, for more precise detection, eHOMD and OES are combined into one database
+#' (`eHOMD_OES`) with two curated versions: `eHOMD_OES_oral` for mainly oral microbes, and
+#' `eHOMD_OES_oropharyngeal` for microbes of the mouth and nasal passages. The curated
+#' versions remove "generalists": species that are common at several body sites but whose
+#' main niche is somewhere else (see **How generalists were found** below).
+#'
+#' **eHOMD_OES**: eHOMD and OES combined
+#'
+#' * DB size: 525 taxa
+#' * Built from: merging OES and eHOMD.
+#' * Status: Healthy and diseases
+#'
+#' **eHOMD_OES_oral**: mainly oral microbes
+#'
+#' * DB size: 504 taxa
+#' * Built from: `eHOMD_OES` minus the 21 generalists whose main niche is not the mouth
+#' * Status: Healthy and diseases
+#'
+#' **eHOMD_OES_oropharyngeal**: microbes of the mouth and nasal passages
+#'
+#' * DB size: 517 taxa
+#' * Built from: `eHOMD_OES` minus the 8 generalists whose main niche is the gut.
+#' * Status: Healthy and diseases
+#'
+#' **How generalists were found**
+#'
+#' Every eHOMD and OES species was checked in curatedMetagenomicData (CMD),
+#' using all its samples from five body sites: oral cavity (857), gut (21,030), nasal cavity
+#' (93), skin (504) and vagina (96). Milk was left out because it has only 8 samples.
+#'
+#' * Detection threshold: relative abundance above 0.1% in a sample.
+#' * Prevalence of generalists: prevalence of at least 1% at 3 or more of the 5 body sites.
+#' * Niche: the body site where its prevalence is highest.
+#'
 #' @source The references for each database are given under Details. Names were taken from
-#' the NCBI Taxonomy database.
+#' the NCBI Taxonomy database. Generalists were found with curatedMetagenomicData.
 #'
 #' @examples
 #' data("Oral_db", package = "OraCol")
 #' names(Oral_db)
+#' sapply(Oral_db, nrow)   # number of taxa in each database
 #' head(Oral_db$HOMD)
+#'
 "Oral_db"
 
 

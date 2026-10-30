@@ -1,7 +1,7 @@
 Package: OraCol
 Type: Package
 Title: Summarise Oral Bacteria in Metagenomic Species Tables
-Version: 0.0.1
+Version: 0.0.2
 Authors@R:
     person("Cong", "Pham", email = "pham0323@flinders.edu.au",
            role = c("aut", "cre"))

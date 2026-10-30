@@ -8,8 +8,8 @@
 #     $species_table_oral      Relative abundance table (proportions, 0-1) of oral species only.
 #                              Abundances are relative to the WHOLE community, so column sums
 #                              = fraction of each gut sample that is oral.
-#     $species_table_oral_CLR  CLR values of oral species. CLR is computed on the FULL community
-#                              first and then subset (see note below).
+#     $species_table_oral_CLR  CLR values of oral species. Each sample is centred on its own 20
+#                              most abundant detected species, then the oral rows are kept.
 #     $Summary_table_species   One row per oral species: mean / median / SD / sum of relative
 #                              abundance, prevalence, mean and median CLR.
 #     $Summary_table_samples   One row per sample: oral relative abundance sum, oral CLR sum and
@@ -22,7 +22,7 @@
 ###################### Main function #########################################################
 #' Summarise oral bacteria in a metagenomic species table
 #'
-#' Finds which species in a species table are oral bacteria, using one of four oral
+#' Finds which species in a species table are oral bacteria, using one of seven oral
 #' reference databases, and returns per-species and per-sample summaries: relative
 #' abundance, prevalence, centred log-ratio (CLR) values, richness and Shannon diversity.
 #'
@@ -30,11 +30,13 @@
 #'   proportions or percentages). Row names are species names or NCBI taxonomy IDs;
 #'   column names are sample names.
 #' @param oral_definition The oral database to use: `"HOMD"` (default), `"eHOMD"`,
-#'   `"OES"` or `"mBodyMap"`. See the section **Oral definitions**.
+#'   `"OES"`, `"mBodyMap"`, or one of the combined eHOMD + OES databases: `"eHOMD_OES"`,
+#'   `"eHOMD_OES_oral"` or `"eHOMD_OES_oropharyngeal"`. See the section **Oral definitions**.
 #' @param taxa_are_rows `TRUE` (default) if species are rows and samples are columns.
 #'   Use `FALSE` if it is the other way round.
 #' @param detection_threshold Lowest relative abundance at which a species is considered
-#'   detected in the sample. The default `0.001` means 0.001%.
+#'   detected in the sample. The default `0.001` means 0.001%. Must be above 0, because half
+#'   of it is also the pseudocount for the CLR values.
 #' @param remove_no_oral `TRUE` (default) removes samples with no oral species detected
 #'   from `Summary_table_samples`. They are listed in `no_oral_samples` instead. Use
 #'   `FALSE` to keep them in `Summary_table_samples`.
@@ -54,7 +56,14 @@
 #' A species counts as oral when its ID is in the chosen oral database.
 #'
 #' CLR values are calculated over the whole community and then subset to the oral
-#' species. Zeros are handled by adding half the smallest non-zero relative abundance.
+#' species. Each sample is centred on the mean log relative abundance of its own 20 most
+#' abundant detected species (all of them if fewer than 20 are detected), not on the mean
+#' of every species in the table. Zeros never enter this centre, so a sample that loses rare
+#' species (as low-diversity guts do) does not get higher oral CLR values for that reason
+#' alone. Zeros are handled by adding half the detection threshold, as a proportion (the
+#' default 0.001% gives 0.000005), so a sample's values do not depend on which other samples
+#' are in the table.
+#'
 #' In a sample with no oral species detected, every oral species gets the same small
 #' negative CLR value. That value comes only from the non-oral species, so it carries
 #' no oral signal. For this reason such samples are left out of `Summary_table_samples`
@@ -62,10 +71,17 @@
 #' `species_table_oral_CLR` and the prevalence values in `Summary_table_species`.
 #'
 #' @section Oral definitions:
-#' * `"HOMD"`: Human Oral Microbiome Database (Chen et al. 2010).
+#' * `"HOMD"`: Human Oral Microbiome Database (Chen et al. 2010). 340 taxa.
 #' * `"eHOMD"`: expanded HOMD, which adds nasal and upper-airway taxa (Escapa et al. 2018).
-#' * `"OES"`: Oral Enrichment Score at 1% (Manghi 2025).
-#' * `"mBodyMap"`: mBodyMap, oral sites of healthy people only (Jin et al. 2022).
+#'   404 taxa.
+#' * `"OES"`: Oral Enrichment Score at 1% (Manghi 2025). 305 taxa.
+#' * `"mBodyMap"`: mBodyMap, oral sites of healthy people only (Jin et al. 2022). 351 taxa.
+#' * `"eHOMD_OES"`: eHOMD and OES combined. 525 taxa.
+#' * `"eHOMD_OES_oral"`: `eHOMD_OES` for mainly oral microbes. 504 taxa, remove 21 generalists.
+#' * `"eHOMD_OES_oropharyngeal"`: `eHOMD_OES` for microbes of the mouth and nasal passages. 517 taxa,
+#'   remove 8 gut specific generalists.
+#'
+#' [Oral_db] gives more details on each database and how the combined ones were built.
 #'
 #' @return A list with six elements:
 #' * `species_table_oral`: relative abundance (0 to 1) of the oral species in each sample.
@@ -91,7 +107,8 @@
 #' @importFrom stats median sd
 #' @export
 OraCol <- function(species_table = NULL,
-                   oral_definition = c("HOMD", "eHOMD", "OES", "mBodyMap"),
+                   oral_definition = c("HOMD", "eHOMD", "OES", "mBodyMap", "eHOMD_OES",
+                                       "eHOMD_OES_oral", "eHOMD_OES_oropharyngeal"),
                    taxa_are_rows = TRUE,
                    detection_threshold = 0.001,
                    remove_no_oral = TRUE) {
@@ -127,8 +144,8 @@ OraCol <- function(species_table = NULL,
   if (any(species_table < 0))
     stop("`species_table` contains negative values.")
   if (!is.numeric(detection_threshold) || length(detection_threshold) != 1 ||
-      is.na(detection_threshold) || detection_threshold < 0 || detection_threshold >= 100)
-    stop("`detection_threshold` must be between 0% and 100%.")
+      is.na(detection_threshold) || detection_threshold <= 0 || detection_threshold >= 100)
+    stop("`detection_threshold` must be above 0% and below 100%.")
   if (!is.logical(remove_no_oral) || length(remove_no_oral) != 1 || is.na(remove_no_oral))
     stop("`remove_no_oral` must be TRUE or FALSE.")
 
@@ -210,10 +227,19 @@ OraCol <- function(species_table = NULL,
   species_table_oral <- rel_ab[is_oral, , drop = FALSE]
 
   ############## CLR transform the species table:  #############################
-  pseudocount <- min(rel_ab[rel_ab > 0]) / 2
-
+  # Pseudocount: half the detection threshold, as a proportion (0.001% -> 0.000005).
+  # It stays the same whichever samples are in the table.
+  pseudocount <- detection_threshold / 100 / 2
   log_ab <- log(rel_ab + pseudocount)
-  clr_full <- sweep(log_ab, 2, colMeans(log_ab), "-")
+
+  # Centre each sample on the mean log abundance of its own 20 most abundant detected
+  # species (all of them if fewer than 20 are detected), so zeros never enter the centre.
+  clr_centre <- sapply(seq_len(ncol(rel_ab)), function(j) {
+    x   <- rel_ab[, j]
+    top <- order(x, decreasing = TRUE)[seq_len(min(20, sum(x > 0)))]
+    mean(log_ab[top, j])
+  })
+  clr_full <- sweep(log_ab, 2, clr_centre, "-")
 
   # Build the Oral centered log transformed table
   species_table_oral_CLR <- clr_full[is_oral, , drop = FALSE]

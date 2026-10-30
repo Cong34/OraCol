@@ -5,8 +5,9 @@
 \alias{Oral_db}
 \title{Oral reference databases used by OraCol}
 \format{
-A named list of four data frames (\code{OES}, \code{mBodyMap}, \code{HOMD}, \code{eHOMD}), each with
-one row per taxon and these columns:
+A named list of seven data frames (\code{OES}, \code{mBodyMap}, \code{HOMD}, \code{eHOMD},
+\code{eHOMD_OES}, \code{eHOMD_OES_oropharyngeal}, \code{eHOMD_OES_oral}), each with one row per taxon
+and these columns:
 \itemize{
 \item \code{ncbi_id}: NCBI taxonomy ID.
 \item \code{name}: scientific name.
@@ -18,14 +19,16 @@ one row per taxon and these columns:
 }
 \source{
 The references for each database are given under Details. Names were taken from
-the NCBI Taxonomy database.
+the NCBI Taxonomy database. Generalists were found with curatedMetagenomicData.
 }
 \usage{
 data(Oral_db)
 }
 \description{
-The four oral definitions that \code{\link[=OraCol]{OraCol()}} can use. Each one lists the taxa that the
-database considers oral.
+The seven oral definitions that \code{\link[=OraCol]{OraCol()}} can use: four published oral databases
+(\code{HOMD}, \code{eHOMD}, \code{OES}, \code{mBodyMap}) and three that combine eHOMD and OES (\code{eHOMD_OES},
+\code{eHOMD_OES_oral}, \code{eHOMD_OES_oropharyngeal}). Each one lists the taxa that the database
+considers oral. \code{HOMD} is the default.
 }
 \details{
 \strong{HOMD}: Human Oral Microbiome Database (Chen et al. 2010)
@@ -63,10 +66,52 @@ database considers oral.
 \item Species definition: NCBI taxonomy (>=2 samples + 0.01\% RA)
 \item Status: Healthy
 }
+
+\strong{Combined eHOMD + OES databases}
+
+In addition, for more precise detection, eHOMD and OES are combined into one database
+(\code{eHOMD_OES}) with two curated versions: \code{eHOMD_OES_oral} for mainly oral microbes, and
+\code{eHOMD_OES_oropharyngeal} for microbes of the mouth and nasal passages. The curated
+versions remove "generalists": species that are common at several body sites but whose
+main niche is somewhere else (see \strong{How generalists were found} below).
+
+\strong{eHOMD_OES}: eHOMD and OES combined
+\itemize{
+\item DB size: 525 taxa
+\item Built from: merging OES and eHOMD.
+\item Status: Healthy and diseases
+}
+
+\strong{eHOMD_OES_oral}: mainly oral microbes
+\itemize{
+\item DB size: 504 taxa
+\item Built from: \code{eHOMD_OES} minus the 21 generalists whose main niche is not the mouth
+\item Status: Healthy and diseases
+}
+
+\strong{eHOMD_OES_oropharyngeal}: microbes of the mouth and nasal passages
+\itemize{
+\item DB size: 517 taxa
+\item Built from: \code{eHOMD_OES} minus the 8 generalists whose main niche is the gut.
+\item Status: Healthy and diseases
+}
+
+\strong{How generalists were found}
+
+Every eHOMD and OES species was checked in curatedMetagenomicData (CMD),
+using all its samples from five body sites: oral cavity (857), gut (21,030), nasal cavity
+(93), skin (504) and vagina (96). Milk was left out because it has only 8 samples.
+\itemize{
+\item Detection threshold: relative abundance above 0.1\% in a sample.
+\item Prevalence of generalists: prevalence of at least 1\% at 3 or more of the 5 body sites.
+\item Niche: the body site where its prevalence is highest.
+}
 }
 \examples{
 data("Oral_db", package = "OraCol")
 names(Oral_db)
+sapply(Oral_db, nrow)   # number of taxa in each database
 head(Oral_db$HOMD)
+
 }
 \keyword{datasets}
