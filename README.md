@@ -54,6 +54,10 @@ is needed. A name found in neither counts as not oral; these names are shown in 
 | `"eHOMD"` | expanded HOMD (Add Nasal) | Escapa et al. 2018 |
 | `"OES"` | Oral Enrichment Score at 1% | Manghi, 2025 |
 | `"mBodyMap"` | mBodyMap_Oral Healthy | Jin et al. 2022 |
+| `"eHOMD_OES"` | Combination of eHOMD and OES | above |
+| `"eHOMD_OES_Oral"` | Combination of eHOMD and OES remove all generalists | above |
+| `"eHOMD_OES_oropharyngeal"` | Combination of eHOMD and OES remove all gut generalists | above |
+
 
 ## More Details: 
 | Oral_db | DB size | Samples size | Sequencing method | Species definition | Status |
@@ -68,7 +72,8 @@ The databases ship with the package, so you can look at exactly which taxa each 
 ```r
 data("Oral_db", package = "OraCol")
 names(Oral_db)       # "OES" "mBodyMap" "HOMD" "eHOMD"
-?Oral_db             # description of the columns
+                     # "eHOMD_OES" "eHOMD_OES_Oral" "eHOMD_OES_oropharyngeal"
+?Oral_db   # for more details
 ```
 
 ## Output
